@@ -2,9 +2,9 @@
 
 use Illuminate\Http\Request;
 
-# USER
+// USER
 Route::group(['prefix' => 'user'], function () {
-    # /user/
+    // /user/
     Route::get(null, function (Request $request) {
         return $request->user();
     });
