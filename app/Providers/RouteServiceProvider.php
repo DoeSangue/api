@@ -47,6 +47,7 @@ class RouteServiceProvider extends ServiceProvider
         $options = [
             'middleware' => 'auth:api',
             'namespace'  => $this->namespace,
+            'test' => 'test',
         ];
 
         Route::group($options, function ($router) {
