@@ -35,45 +35,37 @@ class RouteServiceProvider extends ServiceProvider
      */
     public function map()
     {
-        $this->mapApiRoutes();
-
-        $this->mapWebRoutes();
-
-        //
+        $this->mapApiProtectedRoutes();
+        $this->mapApiPublicRoutes();
     }
 
     /**
-     * Define the "web" routes for the application.
-     *
-     * These routes all receive session state, CSRF protection, etc.
-     *
-     * @return void
+     * Define the api protected routes.
      */
-    protected function mapWebRoutes()
+    protected function mapApiProtectedRoutes()
     {
-        Route::group([
-            'middleware' => 'web',
-            'namespace'  => $this->namespace,
-        ], function ($router) {
-            require base_path('routes/web.php');
+        $options = [
+            'middleware' => 'auth:api',
+            'namespace' => $this->namespace,
+        ];
+
+        Route::group($options, function ($router) {
+            require base_path('routes/api/protected.php');
         });
     }
 
     /**
-     * Define the "api" routes for the application.
-     *
-     * These routes are typically stateless.
-     *
-     * @return void
+     * Define the api public routes.
      */
-    protected function mapApiRoutes()
+    protected function mapApiPublicRoutes()
     {
-        Route::group([
+        $options = [
             'middleware' => 'api',
-            'namespace'  => $this->namespace,
-            'prefix'     => 'api',
-        ], function ($router) {
-            require base_path('routes/api.php');
+            'namespace' => $this->namespace,
+        ];
+
+        Route::group($options, function ($router) {
+            require base_path('routes/api/public.php');
         });
     }
 }
