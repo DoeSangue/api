@@ -45,7 +45,7 @@ class RouteServiceProvider extends ServiceProvider
     protected function mapApiProtectedRoutes()
     {
         $options = [
-            'middleware' => 'auth:api',
+            'middleware' => ['auth:api', 'cors'],
             'namespace'  => $this->namespace,
         ];
 
@@ -60,7 +60,7 @@ class RouteServiceProvider extends ServiceProvider
     protected function mapApiPublicRoutes()
     {
         $options = [
-            'middleware' => 'api',
+            'middleware' => ['api', 'cors'],
             'namespace'  => $this->namespace,
         ];
 
