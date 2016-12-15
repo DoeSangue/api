@@ -1,11 +1,5 @@
 <?php
 
-use Illuminate\Http\Request;
-
-// USER
-Route::group(['prefix' => 'user'], function () {
-    // /user/
-    Route::get(null, function (Request $request) {
-        return $request->user();
-    });
+Route::group(['namespace' => 'User'], function () {
+    Route::get('me', 'MeController@show');
 });
