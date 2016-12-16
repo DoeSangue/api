@@ -2,45 +2,83 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\APIController;
+use App\Services\JWT;
+use App\Transformers\UserTransformer;
 use Illuminate\Foundation\Auth\ThrottlesLogins;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
-use JWTAuth;
-use Lang;
+use Illuminate\Support\Facades\Lang;
+use Tymon\JWTAuth\Exceptions\JWTException;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
-class LoginController extends Controller
+class LoginController extends APIController
 {
     use ThrottlesLogins;
 
+    /**
+     * Issue a JWT token when valid login credentials are presented.
+     *
+     * @param Request $request
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function login(Request $request)
     {
+        // Determine if the user has too many failed login attempts.
         if ($this->hasTooManyLoginAttempts($request)) {
+            // Fire an event when a lockout occurs.
             $this->fireLockoutEvent($request);
 
             return $this->sendLockoutResponse($request);
         }
 
+        // Grab credentials from the request.
         $credentials = $request->only('email', 'password');
 
+        // Attempt to verify the credentials and create a token for the user.
         try {
             if (!$token = JWTAuth::attempt($credentials)) {
+                // Increments login attempts.
                 $this->incrementLoginAttempts($request);
 
-                return response()->json(['error' => 'invalid_credentials'], Response::HTTP_UNAUTHORIZED);
+                $message = Lang::get('auth.failed');
+
+                return $this->responseWithUnauthorized($message);
             }
         } catch (JWTException $e) {
-            return response()->json(['error' => 'could_not_create_token'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->responseWithInternalServerError("Couldn't create token.");
         }
 
-        return response()->json(compact('token'));
+        // All good so return the json with token and user.
+        return $this->sendLoginResponse($request, $token);
     }
 
-    public function username()
+    /**
+     * Returns the token and current user authenticated.
+     *
+     * @param Request $request
+     * @param $token
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    protected function sendLoginResponse(Request $request, $token)
     {
-        return 'email';
+        $this->clearLoginAttempts($request);
+
+        $user = $this->transform->item($request->user(), new UserTransformer());
+
+        $token_ttl = (new JWT($token))->getTokenTTL();
+
+        return $this->response(compact('token', 'token_ttl', 'user'));
     }
 
+    /**
+     * Notify the user after determining they are locked out.
+     *
+     * @param Request $request
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
     protected function sendLockoutResponse(Request $request)
     {
         $seconds = $this->limiter()->availableIn(
@@ -49,6 +87,14 @@ class LoginController extends Controller
 
         $message = Lang::get('auth.throttle', ['seconds' => $seconds]);
 
-        return response()->json(['error' => $message], Response::HTTP_TOO_MANY_REQUESTS);
+        return $this->responseWithTooManyRequests($message);
+    }
+
+    /**
+     * @return string
+     */
+    public function username()
+    {
+        return 'email';
     }
 }
